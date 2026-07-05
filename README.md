@@ -10,10 +10,10 @@
 
 | Тип контенту | API | Ключ потрібен? | Ціна |
 |---|---|---|---|
-| 🎬 Фільми | [OMDb](https://www.omdbapi.com) | Так (безкоштовний) | 1000 запитів/день |
-| 📺 Серіали | [TVmaze](https://www.tvmaze.com/api) | **Ні** | Безкоштовно |
-| 🌸 Дорами | [TVmaze](https://www.tvmaze.com/api) | **Ні** | Безкоштовно |
-| ⛩ Аніме | [Jikan](https://jikan.moe) | **Ні** | Безкоштовно |
+| Фільми | [OMDb](https://www.omdbapi.com) | Так (безкоштовний) | 1000 запитів/день |
+| Серіали | [TVmaze](https://www.tvmaze.com/api) | **Ні** | Безкоштовно |
+| Дорами | [TVmaze](https://www.tvmaze.com/api) | **Ні** | Безкоштовно |
+| Аніме | [Jikan](https://jikan.moe) | **Ні** | Безкоштовно |
 
 ### Про TMDB і $149/місяць
 
