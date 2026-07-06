@@ -14,6 +14,12 @@ def _load_locale(lang: str) -> dict:
         return json.load(f)
 
 
+def load_locales() -> None:
+    
+    for lang in SUPPORTED_LANGUAGES:
+        _load_locale(lang)
+
+
 def t(lang: str, key: str) -> str:
     if lang not in SUPPORTED_LANGUAGES:
         lang = "uk"
