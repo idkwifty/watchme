@@ -12,7 +12,7 @@ def get_json(url: str, params: dict[str, Any] | None = None) -> Any:
         url = f"{url}?{query}"
 
     request = urllib.request.Request(url, headers={"User-Agent": "WatchBot/1.0"})
-    with urllib.request.urlopen(request, timeout=40) as response:
+    with urllib.request.urlopen(request, timeout=20) as response:
         return json.loads(response.read().decode("utf-8"))
 
 def post_json(url: str, body: dict[str, Any]) -> Any:
@@ -27,5 +27,5 @@ def post_json(url: str, body: dict[str, Any]) -> Any:
         },
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=40) as response:
+    with urllib.request.urlopen(request, timeout=20) as response:
         return json.loads(response.read().decode("utf-8"))
