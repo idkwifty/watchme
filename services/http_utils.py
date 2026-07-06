@@ -27,5 +27,5 @@ def post_json(url: str, body: dict[str, Any]) -> Any:
         },
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=20) as response:
+    with urllib.request.urlopen(request, timeout=40) as response:
         return json.loads(response.read().decode("utf-8"))
