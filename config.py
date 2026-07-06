@@ -12,7 +12,7 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
 JIKAN_BASE_URL = "https://api.jikan.moe/v4"
 
-DATABASE_PATH = Path(__file__).parent / "bot_data.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 SUPPORTED_LANGUAGES = ("uk", "ru", "en")
 
 TMDB_LANGUAGE = {
