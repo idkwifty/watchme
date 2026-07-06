@@ -1,6 +1,5 @@
 from html import unescape
 from typing import Any
-
 from config import JIKAN_BASE_URL
 from services.http_utils import get_json
 
@@ -16,14 +15,24 @@ GENRE_NAMES = {
     "animation": "Slice of Life",
     "mystery": "Mystery",
 }
-
+GENRE_IDS = {
+    "Action": 1,
+    "Comedy": 4,
+    "Drama": 8,
+    "Horror": 14,
+    "Romance": 22,
+    "Sci-Fi": 24,
+    "Thriller": 41,
+    "Fantasy": 10,
+    "Slice of Life": 36,
+    "Mystery": 7,
+}
 MOOD_GENRES = {
     "light": ["Comedy", "Slice of Life"],
     "sad": ["Drama", "Romance"],
     "intense": ["Action", "Thriller", "Horror"],
     "any": [],
 }
-
 
 def discover_anime(
     genres: list[str],
@@ -41,12 +50,15 @@ def discover_anime(
         "page": page,
         "min_score": 7,
     }
-    if genre_list:
-        params["genres"] = ",".join(genre_list)
+    genre_ids = [str(GENRE_IDS[g]) for g in genre_list if g in GENRE_IDS]
+    if genre_ids:
+        params["genres"] = ",".join(genre_ids)
 
     try:
         data = get_json(f"{JIKAN_BASE_URL}/anime", params)
-    except Exception:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return []
 
     results = []

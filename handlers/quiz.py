@@ -1,15 +1,16 @@
-
-
 from telebot import TeleBot
 
 from database import db
 from handlers.common import (
+    card_keyboard,
     format_recommendation,
     genre_keyboard,
     mood_keyboard,
     results_keyboard,
     skip_keyboard,
+    type_keyboard,  
 )
+
 from services import jikan, tmdb
 from services.inter import t
 
@@ -35,34 +36,49 @@ def _fetch_recommendations(user: dict) -> list[dict]:
     return []
 
 
-def _send_recommendations(bot: TeleBot, chat_id: int, user_id: int, lang: str) -> None:
+def _send_next_card(bot: TeleBot, chat_id: int, user_id: int, lang: str) -> None:
     user = db.get_user(user_id)
-    results = _fetch_recommendations(user)
+    quiz = user["quiz_data"]
+    queue = quiz.get("queue", [])
 
-    if not results:
-        bot.send_message(
-            chat_id,
-            t(lang, "no_results"),
-            reply_markup=results_keyboard(lang),
-        )
-        return
+    if not queue:
+        quiz["page"] = quiz.get("page", 1) + 1
+        db.update_quiz_data(user_id, quiz)
 
-    bot.send_message(chat_id, t(lang, "results_title"))
+        results = _fetch_recommendations(user)
+        if not results:
+            bot.send_message(chat_id, t(lang, "no_results"), reply_markup=results_keyboard(lang))
+            return
 
-    new_ids = []
-    for item in results:
-        text = format_recommendation(item, lang)
-        if item.get("poster_url"):
-            bot.send_photo(chat_id, item["poster_url"], caption=text, parse_mode="HTML")
-        else:
-            bot.send_message(chat_id, text, parse_mode="HTML")
-        new_ids.append(item["id"])
+        quiz["queue"] = results
+        db.update_quiz_data(user_id, quiz)
+        queue = results
 
-    db.add_shown_ids(user_id, new_ids)
-    bot.send_message(chat_id, "—" * 20, reply_markup=results_keyboard(lang))
+    item = queue[0]
+    text = format_recommendation(item, lang)
+    markup = card_keyboard(lang, item["id"])
+
+    if item.get("poster_url"):
+        bot.send_photo(chat_id, item["poster_url"], caption=text, parse_mode="HTML", reply_markup=markup)
+    else:
+        bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
 
 
 def register(bot: TeleBot) -> None:
+
+    @bot.callback_query_handler(func=lambda c: c.data == "home")
+    def on_go_home(call):
+        user_id = call.from_user.id
+        user = db.get_user(user_id)
+        lang = user["language"]
+
+        db.reset_quiz(user_id)
+        bot.send_message(
+            call.message.chat.id,
+            t(lang, "choose_type"),
+            reply_markup=type_keyboard(lang),
+        )
+        bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda c: c.data.startswith("type:"))
     def on_type_chosen(call):
@@ -70,7 +86,6 @@ def register(bot: TeleBot) -> None:
         user_id = call.from_user.id
         user = db.get_user(user_id)
         lang = user["language"]
-
         quiz_data = {
             "type": content_type,
             "genres": [],
@@ -78,10 +93,10 @@ def register(bot: TeleBot) -> None:
             "actor_id": None,
             "actor_name": None,
             "page": 1,
+            "queue": [],
         }
         db.update_quiz_data(user_id, quiz_data)
         db.set_quiz_step(user_id, "choosing_genre")
-
         bot.edit_message_text(
             t(lang, "choose_genre"),
             call.message.chat.id,
@@ -89,7 +104,8 @@ def register(bot: TeleBot) -> None:
             reply_markup=genre_keyboard(lang, []),
         )
         bot.answer_callback_query(call.id)
-
+        
+        
     @bot.callback_query_handler(func=lambda c: c.data.startswith("genre:"))
     def on_genre_chosen(call):
         user_id = call.from_user.id
@@ -151,7 +167,7 @@ def register(bot: TeleBot) -> None:
 
         if quiz_data.get("type") == "anime":
             bot.edit_message_text(t(lang, "searching"), call.message.chat.id, call.message.message_id)
-            _send_recommendations(bot, call.message.chat.id, user_id, lang)
+            _send_next_card(bot, call.message.chat.id, user_id, lang)
             db.set_quiz_step(user_id, "")
             bot.answer_callback_query(call.id)
             return
@@ -172,7 +188,7 @@ def register(bot: TeleBot) -> None:
         lang = user["language"]
 
         bot.edit_message_text(t(lang, "searching"), call.message.chat.id, call.message.message_id)
-        _send_recommendations(bot, call.message.chat.id, user_id, lang)
+        _send_next_card(bot, call.message.chat.id, user_id, lang)
         db.set_quiz_step(user_id, "")
         bot.answer_callback_query(call.id)
 
@@ -197,19 +213,40 @@ def register(bot: TeleBot) -> None:
 
         db.update_quiz_data(user_id, quiz_data)
         bot.send_message(message.chat.id, t(lang, "searching"))
-        _send_recommendations(bot, message.chat.id, user_id, lang)
+        _send_next_card(bot, message.chat.id, user_id, lang)
         db.set_quiz_step(user_id, "")
+
+    @bot.callback_query_handler(func=lambda c: c.data.startswith(("like:", "next:")))
+    def on_card_action(call):
+        action, item_id = call.data.split(":", 1)
+        user_id = call.from_user.id
+        user = db.get_user(user_id)
+        lang = user["language"]
+        quiz_data = user["quiz_data"]
+        queue = quiz_data.get("queue", [])
+
+        if action == "like":
+            liked_item = None
+            for it in queue:
+                if str(it["id"]) == item_id:
+                    liked_item = it
+                    break
+            if liked_item:
+                db.add_favorite(user_id, liked_item)
+
+        if queue and str(queue[0]["id"]) == item_id:
+            queue.pop(0)
+        quiz_data["queue"] = queue
+        db.update_quiz_data(user_id, quiz_data)
+        db.add_shown_ids(user_id, [item_id])
+
+        bot.answer_callback_query(call.id)
+        _send_next_card(bot, call.message.chat.id, user_id, lang)
 
     @bot.callback_query_handler(func=lambda c: c.data == "more")
     def on_show_more(call):
         user_id = call.from_user.id
         user = db.get_user(user_id)
         lang = user["language"]
-
-        quiz_data = user["quiz_data"]
-        quiz_data["page"] = quiz_data.get("page", 1) + 1
-        db.update_quiz_data(user_id, quiz_data)
-
-        bot.send_message(call.message.chat.id, t(lang, "searching"))
-        _send_recommendations(bot, call.message.chat.id, user_id, lang)
         bot.answer_callback_query(call.id)
+        _send_next_card(bot, call.message.chat.id, user_id, lang)

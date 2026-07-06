@@ -15,7 +15,6 @@ def get_json(url: str, params: dict[str, Any] | None = None) -> Any:
     with urllib.request.urlopen(request, timeout=20) as response:
         return json.loads(response.read().decode("utf-8"))
 
-
 def post_json(url: str, body: dict[str, Any]) -> Any:
    
     data = json.dumps(body).encode("utf-8")

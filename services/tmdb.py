@@ -4,6 +4,7 @@ from typing import Any
 from config import TMDB_API_KEY, TMDB_BASE_URL, TMDB_LANGUAGE
 from services.http_utils import get_json
 
+
 GENRE_IDS = {
     "action": 28,
     "comedy": 35,
@@ -24,18 +25,38 @@ MOOD_GENRES = {
     "any": [],
 }
 
+
+TV_GENRE_IDS = {
+    "action": 10759,
+    "comedy": 35,
+    "drama": 18,
+    "scifi": 10765,
+    "fantasy": 10765,
+    "animation": 16,
+    "mystery": 9648,
+}
+
+TV_MOOD_GENRES = {
+    "light": [35, 10751],
+    "sad": [18],
+    "intense": [10759, 10765],
+    "any": [],
+}
+
 DORAMA_COUNTRIES = "KR|JP|CN|TW|TH"
 
 
 def _tmdb_get(endpoint: str, params: dict | None = None) -> dict | None:
     if not TMDB_API_KEY:
+        print("TMDB_API_KEY порожній — перевір .env")
         return None
     try:
         data = get_json(
             f"{TMDB_BASE_URL}/{endpoint}",
             {"api_key": TMDB_API_KEY, **(params or {})},
         )
-    except Exception:
+    except Exception as e:
+        print(f"TMDB API error on {endpoint}: {e}")
         return None
     return data if isinstance(data, dict) else None
 
@@ -53,10 +74,20 @@ def _genre_ids(genres: list[str], mood: str) -> list[int]:
     return list(dict.fromkeys(ids))
 
 
+def _tv_genre_ids(genres: list[str], mood: str) -> list[int]:
+    ids = [TV_GENRE_IDS[g] for g in genres if g in TV_GENRE_IDS]
+    ids.extend(TV_MOOD_GENRES.get(mood, []))
+    return list(dict.fromkeys(ids))
+
+
+DORAMA_COUNTRY_SET = {"KR", "JP", "CN", "TW", "TH"}
+
+
 def _format_results(
     data: dict | None,
     exclude_ids: list,
     media_type: str,
+    exclude_countries: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     if not data:
         return []
@@ -66,6 +97,11 @@ def _format_results(
         item_id = item.get("id")
         if item_id in exclude_ids:
             continue
+
+        if exclude_countries:
+            origin = set(item.get("origin_country") or [])
+            if origin & exclude_countries:
+                continue
 
         title = item.get("title") or item.get("name") or "?"
         overview = item.get("overview") or ""
@@ -106,7 +142,7 @@ def discover_movies(
     }
     genre_ids = _genre_ids(genres, mood)
     if genre_ids:
-        params["with_genres"] = ",".join(str(g) for g in genre_ids)
+        params["with_genres"] = "|".join(str(g) for g in genre_ids)
     if actor_id:
         params["with_cast"] = actor_id
 
@@ -127,13 +163,18 @@ def discover_series(
         "vote_count.gte": 50,
         "page": page,
     }
-    genre_ids = _genre_ids(genres, mood)
+    genre_ids = _tv_genre_ids(genres, mood)
     if genre_ids:
-        params["with_genres"] = ",".join(str(g) for g in genre_ids)
+        params["with_genres"] = "|".join(str(g) for g in genre_ids)
     if actor_id:
         params["with_cast"] = actor_id
 
-    return _format_results(_tmdb_get("discover/tv", params), exclude_ids, "series")
+    return _format_results(
+        _tmdb_get("discover/tv", params),
+        exclude_ids,
+        "series",
+        exclude_countries=DORAMA_COUNTRY_SET,   
+    )
 
 
 def discover_dorama(
@@ -151,9 +192,9 @@ def discover_dorama(
         "with_origin_country": DORAMA_COUNTRIES,
         "page": page,
     }
-    genre_ids = _genre_ids(genres, mood)
+    genre_ids = _tv_genre_ids(genres, mood)
     if genre_ids:
-        params["with_genres"] = ",".join(str(g) for g in genre_ids)
+        params["with_genres"] = "|".join(str(g) for g in genre_ids)
     if actor_id:
         params["with_cast"] = actor_id
 

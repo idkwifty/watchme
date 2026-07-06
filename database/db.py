@@ -13,7 +13,6 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    
     with _connect() as db:
         db.execute(
             """
@@ -23,6 +22,16 @@ def init_db() -> None:
                 quiz_step TEXT DEFAULT '',
                 quiz_data TEXT DEFAULT '{}',
                 shown_ids TEXT DEFAULT '[]'
+            )
+            """
+        )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS favorites (
+                user_id INTEGER,
+                item_id TEXT,
+                item_data TEXT,
+                PRIMARY KEY (user_id, item_id)
             )
             """
         )
@@ -103,5 +112,29 @@ def reset_quiz(user_id: int) -> None:
             WHERE user_id = ?
             """,
             (user_id,),
+        )
+        db.commit()
+def add_favorite(user_id: int, item: dict) -> None:
+    with _connect() as db:
+        db.execute(
+            "INSERT OR REPLACE INTO favorites (user_id, item_id, item_data) VALUES (?, ?, ?)",
+            (user_id, str(item["id"]), json.dumps(item, ensure_ascii=False)),
+        )
+        db.commit()
+
+
+def get_favorites(user_id: int) -> list[dict]:
+    with _connect() as db:
+        rows = db.execute(
+            "SELECT item_data FROM favorites WHERE user_id = ?", (user_id,)
+        ).fetchall()
+        return [json.loads(r["item_data"]) for r in rows]
+
+
+def remove_favorite(user_id: int, item_id: str) -> None:
+    with _connect() as db:
+        db.execute(
+            "DELETE FROM favorites WHERE user_id = ? AND item_id = ?",
+            (user_id, item_id),
         )
         db.commit()

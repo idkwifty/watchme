@@ -30,9 +30,19 @@ def type_keyboard(lang: str) -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton(t(lang, "type_anime"), callback_data="type:anime"),
         types.InlineKeyboardButton(t(lang, "type_dorama"), callback_data="type:dorama"),
     )
+    markup.add(types.InlineKeyboardButton(t(lang, "menu_favorites"), callback_data="show_favorites"))
     markup.add(types.InlineKeyboardButton(t(lang, "change_language"), callback_data="change_lang"))
     return markup
 
+
+def card_keyboard(lang: str, item_id) -> types.InlineKeyboardMarkup:
+    markup = types.InlineKeyboardMarkup()
+    markup.row(
+        types.InlineKeyboardButton(t(lang, "like"), callback_data=f"like:{item_id}"),
+        types.InlineKeyboardButton(t(lang, "next"), callback_data=f"next:{item_id}"),
+    )
+    markup.add(types.InlineKeyboardButton(t(lang, "go_home"), callback_data="home"))
+    return markup
 
 def genre_keyboard(lang: str, selected: list[str]) -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
@@ -77,11 +87,12 @@ def results_keyboard(lang: str) -> types.InlineKeyboardMarkup:
 
 def format_recommendation(item: dict, lang: str) -> str:
     lines = [
-        f"🎬 <b>{item['title']}</b>",
-        f"⭐ {t(lang, 'rating')}: {item['rating']}/10",
+        f"<b>{item['title']}</b>",
+        f"{t(lang, 'rating')}: {item['rating']}/10",
     ]
     if item.get("year"):
-        lines.append(f"📅 {t(lang, 'year')}: {item['year']}")
+        lines.append(f" {t(lang, 'year')}: {item['year']}")
     if item.get("overview"):
         lines.append(f"\n{item['overview']}")
     return "\n".join(lines)
+
