@@ -31,6 +31,7 @@ def type_keyboard(lang: str) -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton(t(lang, "type_dorama"), callback_data="type:dorama"),
     )
     markup.add(types.InlineKeyboardButton(t(lang, "menu_favorites"), callback_data="show_favorites"))
+    markup.add(types.InlineKeyboardButton(t(lang, "menu_watched"), callback_data="show_watched"))
     markup.add(types.InlineKeyboardButton(t(lang, "change_language"), callback_data="change_lang"))
     return markup
 

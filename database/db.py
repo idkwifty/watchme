@@ -44,11 +44,15 @@ def init_db() -> None:
                 CREATE TABLE IF NOT EXISTS watched (
                     user_id BIGINT,
                     item_id TEXT,
+                    item_data TEXT DEFAULT '{}',
                     PRIMARY KEY (user_id, item_id)
                 )
                 """
             )
-        conn.commit()
+            cur.execute(
+                "ALTER TABLE watched ADD COLUMN IF NOT EXISTS item_data TEXT DEFAULT '{}'"
+            )
+            conn.commit()
 
 
 def get_user(user_id: int) -> dict[str, Any]:
@@ -168,16 +172,16 @@ def remove_favorite(user_id: int, item_id: str) -> None:
             )
         conn.commit()
         
-def add_watched(user_id: int, item_id: str) -> None:
+def add_watched(user_id: int, item: dict) -> None:
     with _connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO watched (user_id, item_id)
-                VALUES (%s, %s)
+                INSERT INTO watched (user_id, item_id, item_data)
+                VALUES (%s, %s, %s)
                 ON CONFLICT (user_id, item_id) DO NOTHING
                 """,
-                (user_id, str(item_id)),
+                (user_id, str(item["id"]), json.dumps(item, ensure_ascii=False)),
             )
         conn.commit()
 
@@ -188,3 +192,11 @@ def get_watched_ids(user_id: int) -> list[str]:
             cur.execute("SELECT item_id FROM watched WHERE user_id = %s", (user_id,))
             rows = cur.fetchall()
             return [r[0] for r in rows]
+
+
+def get_watched(user_id: int) -> list[dict]:
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT item_data FROM watched WHERE user_id = %s", (user_id,))
+            rows = cur.fetchall()
+            return [json.loads(r[0]) for r in rows]

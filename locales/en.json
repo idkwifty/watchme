@@ -1,6 +1,7 @@
 {
   "choose_language": "Choose language:",
   "no_favorites": "You do not have favorites",
+  "no_watched": "You have no watched items yet",
   "remove_favorite": "Remove from favorites",
   "welcome": "Hi!\n\nI'll help you pick something to watch when you're not sure.\n\nAnswer a few questions — and I'll suggest a movie, series, anime, or drama.",
   "choose_type": "What do you want to watch?",
@@ -9,6 +10,7 @@
   "type_anime": "Anime",
   "type_dorama": "Drama (K-drama)",
   "menu_favorites": "Favorites",
+  "menu_watched": "Watched",
   "choose_genre": "Pick genres (tap several, then «Done»):",
   "genre_action": "Action",
   "genre_comedy": "Comedy",

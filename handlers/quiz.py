@@ -235,7 +235,13 @@ def register(bot: TeleBot) -> None:
                 db.add_favorite(user_id, liked_item)
 
         if action == "watched":
-            db.add_watched(user_id, item_id)
+            watched_item = None
+            for it in queue:
+                if str(it["id"]) == item_id:
+                    watched_item = it
+                    break
+            if watched_item:
+                db.add_watched(user_id, watched_item)
 
         if queue and str(queue[0]["id"]) == item_id:
             queue.pop(0)
