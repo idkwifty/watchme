@@ -6,7 +6,7 @@ import urllib.request
 from typing import Any
 
 
-def _request_with_retry(request: urllib.request.Request, timeout: int = 20, retries: int = 3, delay: float = 1.5) -> Any:
+def _request_with_retry(request: urllib.request.Request, timeout: int = 8, retries: int = 2, delay: float = 1.0) -> Any:
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
@@ -14,7 +14,6 @@ def _request_with_retry(request: urllib.request.Request, timeout: int = 20, retr
                 return json.loads(response.read().decode("utf-8"))
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
             last_error = e
-            # На останній спробі не чекаємо, а одразу пробрасуємо помилку
             if attempt < retries:
                 time.sleep(delay)
                 continue
@@ -22,17 +21,15 @@ def _request_with_retry(request: urllib.request.Request, timeout: int = 20, retr
 
 
 def get_json(url: str, params: dict[str, Any] | None = None) -> Any:
-    
     if params:
         query = urllib.parse.urlencode(params)
         url = f"{url}?{query}"
 
     request = urllib.request.Request(url, headers={"User-Agent": "WatchBot/1.0"})
-    return _request_with_retry(request, timeout=20, retries=3, delay=1.5)
+    return _request_with_retry(request, timeout=8, retries=2, delay=1.0)
 
 
 def post_json(url: str, body: dict[str, Any]) -> Any:
-    
     data = json.dumps(body).encode("utf-8")
     request = urllib.request.Request(
         url,
@@ -43,4 +40,4 @@ def post_json(url: str, body: dict[str, Any]) -> Any:
         },
         method="POST",
     )
-    return _request_with_retry(request, timeout=20, retries=3, delay=1.5)
+    return _request_with_retry(request, timeout=8, retries=2, delay=1.0)
