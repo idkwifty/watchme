@@ -39,6 +39,15 @@ def init_db() -> None:
                 )
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS watched (
+                    user_id BIGINT,
+                    item_id TEXT,
+                    PRIMARY KEY (user_id, item_id)
+                )
+                """
+            )
         conn.commit()
 
 
@@ -158,3 +167,24 @@ def remove_favorite(user_id: int, item_id: str) -> None:
                 (user_id, item_id),
             )
         conn.commit()
+        
+def add_watched(user_id: int, item_id: str) -> None:
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO watched (user_id, item_id)
+                VALUES (%s, %s)
+                ON CONFLICT (user_id, item_id) DO NOTHING
+                """,
+                (user_id, str(item_id)),
+            )
+        conn.commit()
+
+
+def get_watched_ids(user_id: int) -> list[str]:
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT item_id FROM watched WHERE user_id = %s", (user_id,))
+            rows = cur.fetchall()
+            return [r[0] for r in rows]

@@ -41,6 +41,7 @@ def card_keyboard(lang: str, item_id) -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton(t(lang, "like"), callback_data=f"like:{item_id}"),
         types.InlineKeyboardButton(t(lang, "next"), callback_data=f"next:{item_id}"),
     )
+    markup.add(types.InlineKeyboardButton(t(lang, "watched"), callback_data=f"watched:{item_id}"))
     markup.add(types.InlineKeyboardButton(t(lang, "go_home"), callback_data="home"))
     return markup
 

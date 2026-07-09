@@ -22,7 +22,7 @@ def _fetch_recommendations(user: dict) -> list[dict]:
     genres = quiz.get("genres", [])
     mood = quiz.get("mood", "any")
     actor_id = quiz.get("actor_id")
-    exclude_ids = user.get("shown_ids", [])
+    exclude_ids = user.get("shown_ids", []) + db.get_watched_ids(user["user_id"])
     page = quiz.get("page", 1)
 
     if content_type == "movie":
@@ -216,7 +216,7 @@ def register(bot: TeleBot) -> None:
         _send_next_card(bot, message.chat.id, user_id, lang)
         db.set_quiz_step(user_id, "")
 
-    @bot.callback_query_handler(func=lambda c: c.data.startswith(("like:", "next:")))
+    @bot.callback_query_handler(func=lambda c: c.data.startswith(("like:", "next:", "watched:")))
     def on_card_action(call):
         action, item_id = call.data.split(":", 1)
         user_id = call.from_user.id
@@ -233,6 +233,9 @@ def register(bot: TeleBot) -> None:
                     break
             if liked_item:
                 db.add_favorite(user_id, liked_item)
+
+        if action == "watched":
+            db.add_watched(user_id, item_id)
 
         if queue and str(queue[0]["id"]) == item_id:
             queue.pop(0)
