@@ -71,6 +71,11 @@ def mood_keyboard(lang: str) -> types.InlineKeyboardMarkup:
     markup.add(types.InlineKeyboardButton(t(lang, "mood_any"), callback_data="mood:any"))
     return markup
 
+def sort_keyboard(lang: str) -> types.InlineKeyboardMarkup:
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(t(lang, "sort_rating"), callback_data="sort:rating"))
+    markup.add(types.InlineKeyboardButton(t(lang, "sort_year"), callback_data="sort:year"))
+    return markup
 
 def skip_keyboard(lang: str) -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()

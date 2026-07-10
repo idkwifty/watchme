@@ -133,10 +133,12 @@ def discover_movies(
     actor_id: int | None,
     exclude_ids: list,
     page: int = 1,
+    sort_by: str = "rating",
 ) -> list[dict[str, Any]]:
+    tmdb_sort = "primary_release_date.desc" if sort_by == "year" else "vote_average.desc"
     params: dict[str, Any] = {
         "language": TMDB_LANGUAGE.get(lang, "en-US"),
-        "sort_by": "vote_average.desc",
+        "sort_by": tmdb_sort,
         "vote_count.gte": 100,
         "page": page,
     }
@@ -156,10 +158,12 @@ def discover_series(
     actor_id: int | None,
     exclude_ids: list,
     page: int = 1,
+    sort_by: str = "rating",
 ) -> list[dict[str, Any]]:
+    tmdb_sort = "first_air_date.desc" if sort_by == "year" else "vote_average.desc"
     params: dict[str, Any] = {
         "language": TMDB_LANGUAGE.get(lang, "en-US"),
-        "sort_by": "vote_average.desc",
+        "sort_by": tmdb_sort,
         "vote_count.gte": 50,
         "page": page,
     }
@@ -184,10 +188,12 @@ def discover_dorama(
     actor_id: int | None,
     exclude_ids: list,
     page: int = 1,
+    sort_by: str = "rating",
 ) -> list[dict[str, Any]]:
+    tmdb_sort = "first_air_date.desc" if sort_by == "year" else "vote_average.desc"
     params: dict[str, Any] = {
         "language": TMDB_LANGUAGE.get(lang, "en-US"),
-        "sort_by": "vote_average.desc",
+        "sort_by": tmdb_sort,
         "vote_count.gte": 20,
         "with_origin_country": DORAMA_COUNTRIES,
         "page": page,

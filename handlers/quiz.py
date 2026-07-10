@@ -8,6 +8,7 @@ from handlers.common import (
     mood_keyboard,
     results_keyboard,
     skip_keyboard,
+    sort_keyboard,
     type_keyboard,  
 )
 
@@ -21,18 +22,19 @@ def _fetch_recommendations(user: dict) -> list[dict]:
     content_type = quiz.get("type", "movie")
     genres = quiz.get("genres", [])
     mood = quiz.get("mood", "any")
+    sort_by = quiz.get("sort", "rating")
     actor_id = quiz.get("actor_id")
     exclude_ids = user.get("shown_ids", []) + db.get_watched_ids(user["user_id"])
     page = quiz.get("page", 1)
 
     if content_type == "movie":
-        return tmdb.discover_movies(lang, genres, mood, actor_id, exclude_ids, page)
+        return tmdb.discover_movies(lang, genres, mood, actor_id, exclude_ids, page, sort_by)
     if content_type == "series":
-        return tmdb.discover_series(lang, genres, mood, actor_id, exclude_ids, page)
+        return tmdb.discover_series(lang, genres, mood, actor_id, exclude_ids, page, sort_by)
     if content_type == "dorama":
-        return tmdb.discover_dorama(lang, genres, mood, actor_id, exclude_ids, page)
+        return tmdb.discover_dorama(lang, genres, mood, actor_id, exclude_ids, page, sort_by)
     if content_type == "anime":
-        return jikan.discover_anime(genres, mood, exclude_ids, page)
+        return jikan.discover_anime(genres, mood, exclude_ids, page, sort_by)
     return []
 
 
@@ -163,6 +165,29 @@ def register(bot: TeleBot) -> None:
         mood = call.data.split(":")[1]
         quiz_data = user["quiz_data"]
         quiz_data["mood"] = mood
+        db.update_quiz_data(user_id, quiz_data)
+        db.set_quiz_step(user_id, "choosing_sort")
+
+        bot.edit_message_text(
+            t(lang, "ask_sort"),
+            call.message.chat.id,
+            call.message.message_id,
+            reply_markup=sort_keyboard(lang),
+        )
+        bot.answer_callback_query(call.id)
+
+    @bot.callback_query_handler(func=lambda c: c.data.startswith("sort:"))
+    def on_sort_chosen(call):
+        user_id = call.from_user.id
+        user = db.get_user(user_id)
+        if user["quiz_step"] != "choosing_sort":
+            bot.answer_callback_query(call.id)
+            return
+
+        lang = user["language"]
+        sort_value = call.data.split(":")[1]
+        quiz_data = user["quiz_data"]
+        quiz_data["sort"] = sort_value
         db.update_quiz_data(user_id, quiz_data)
 
         if quiz_data.get("type") == "anime":

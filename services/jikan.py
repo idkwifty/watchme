@@ -39,13 +39,15 @@ def discover_anime(
     mood: str,
     exclude_ids: list,
     page: int = 1,
+    sort_by: str = "rating",
 ) -> list[dict[str, Any]]:
     genre_list = [GENRE_NAMES[g] for g in genres if g in GENRE_NAMES]
     genre_list.extend(MOOD_GENRES.get(mood, []))
     genre_list = list(dict.fromkeys(genre_list))
 
+    jikan_order_by = "start_date" if sort_by == "year" else "score"
     params: dict[str, Any] = {
-        "order_by": "score",
+        "order_by": jikan_order_by,
         "sort": "desc",
         "page": page,
         "min_score": 7,
