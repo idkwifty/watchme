@@ -35,6 +35,12 @@ def _request_with_retry(
                 if attempt < retries:
                     time.sleep(wait)
                     continue
+            elif e.code in (502, 503, 504):
+                # Upstream server overloaded/unavailable — give it more time
+                wait = delay * attempt * 3
+                if attempt < retries:
+                    time.sleep(wait)
+                    continue
             elif attempt < retries:
                 time.sleep(delay)
                 continue
@@ -64,7 +70,7 @@ def get_json(url: str, params: dict[str, Any] | None = None) -> Any:
             "Accept": "application/json",
         },
     )
-    return _request_with_retry(request, timeout=8, retries=3, delay=1.5)
+    return _request_with_retry(request, timeout=10, retries=4, delay=1.5)
 
 
 def post_json(url: str, body: dict[str, Any]) -> Any:
