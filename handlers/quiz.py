@@ -12,7 +12,7 @@ from handlers.common import (
     type_keyboard,  
 )
 
-from services import jikan, tmdb
+from services import anilist, tmdb
 from services.inter import t
 
 
@@ -34,7 +34,7 @@ def _fetch_recommendations(user: dict) -> list[dict]:
     if content_type == "dorama":
         return tmdb.discover_dorama(lang, genres, mood, actor_id, exclude_ids, page, sort_by)
     if content_type == "anime":
-        return jikan.discover_anime(genres, mood, exclude_ids, page, sort_by)
+        return anilist.discover_anime(genres, mood, exclude_ids, page, sort_by)
     return []
 
 
