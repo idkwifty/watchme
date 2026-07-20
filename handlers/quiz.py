@@ -34,7 +34,7 @@ def _fetch_recommendations(user: dict) -> list[dict]:
     if content_type == "dorama":
         return tmdb.discover_dorama(lang, genres, mood, actor_id, exclude_ids, page, sort_by)
     if content_type == "anime":
-        return anilist.discover_anime(genres, mood, exclude_ids, page, sort_by)
+        return anilist.discover_anime(genres, mood, exclude_ids, page, sort_by, lang)
     return []
 
 

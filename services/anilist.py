@@ -2,6 +2,7 @@ from html import unescape
 from typing import Any
 
 from services.http_utils import post_json
+from services.translate import translate_text
 
 ANILIST_URL = "https://graphql.anilist.co"
 
@@ -58,6 +59,7 @@ def discover_anime(
     exclude_ids: list,
     page: int = 1,
     sort_by: str = "rating",
+    lang: str = "en",
 ) -> list[dict[str, Any]]:
     genre_list = [GENRE_NAMES[g] for g in genres if g in GENRE_NAMES]
     genre_list.extend(MOOD_GENRES.get(mood, []))
@@ -96,6 +98,11 @@ def discover_anime(
         synopsis = unescape(synopsis)
         # AniList sometimes leaves <br> tags even with asHtml:false — strip stray markup.
         synopsis = synopsis.replace("<br>", " ").replace("<br/>", " ").replace("<br />", " ")
+        # Keep the source text within MyMemory's per-request length limit
+        # before translating, then trim again for display after translation.
+        if len(synopsis) > 450:
+            synopsis = synopsis[:450]
+        synopsis = translate_text(synopsis, lang)
         if len(synopsis) > 300:
             synopsis = synopsis[:297] + "..."
 
