@@ -2,7 +2,6 @@ from html import unescape
 from typing import Any
 
 from services.http_utils import post_json
-from services.translate import translate_text
 
 ANILIST_URL = "https://graphql.anilist.co"
 
@@ -61,6 +60,10 @@ def discover_anime(
     sort_by: str = "rating",
     lang: str = "en",
 ) -> list[dict[str, Any]]:
+    # Imported here (not at module top-level) to avoid a circular import
+    # between services.anilist and services.translate at load time.
+    from services.translate import translate_text
+
     genre_list = [GENRE_NAMES[g] for g in genres if g in GENRE_NAMES]
     genre_list.extend(MOOD_GENRES.get(mood, []))
     genre_list = list(dict.fromkeys(genre_list))
