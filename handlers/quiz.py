@@ -75,12 +75,12 @@ def register(bot: TeleBot) -> None:
         lang = user["language"]
 
         db.reset_quiz(user_id)
+        bot.answer_callback_query(call.id)
         bot.send_message(
             call.message.chat.id,
             t(lang, "choose_type"),
             reply_markup=type_keyboard(lang),
         )
-        bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda c: c.data.startswith("type:"))
     def on_type_chosen(call):
@@ -99,13 +99,13 @@ def register(bot: TeleBot) -> None:
         }
         db.update_quiz_data(user_id, quiz_data)
         db.set_quiz_step(user_id, "choosing_genre")
+        bot.answer_callback_query(call.id)
         bot.edit_message_text(
             t(lang, "choose_genre"),
             call.message.chat.id,
             call.message.message_id,
             reply_markup=genre_keyboard(lang, []),
         )
-        bot.answer_callback_query(call.id)
         
         
     @bot.callback_query_handler(func=lambda c: c.data.startswith("genre:"))
@@ -130,13 +130,13 @@ def register(bot: TeleBot) -> None:
             db.update_quiz_data(user_id, quiz_data)
             db.set_quiz_step(user_id, "choosing_mood")
 
+            bot.answer_callback_query(call.id)
             bot.edit_message_text(
                 t(lang, "ask_mood"),
                 call.message.chat.id,
                 call.message.message_id,
                 reply_markup=mood_keyboard(lang),
             )
-            bot.answer_callback_query(call.id)
             return
 
         if action in selected:
@@ -146,12 +146,12 @@ def register(bot: TeleBot) -> None:
 
         quiz_data["genres"] = selected
         db.update_quiz_data(user_id, quiz_data)
+        bot.answer_callback_query(call.id)
         bot.edit_message_reply_markup(
             call.message.chat.id,
             call.message.message_id,
             reply_markup=genre_keyboard(lang, selected),
         )
-        bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda c: c.data.startswith("mood:"))
     def on_mood_chosen(call):
@@ -168,13 +168,13 @@ def register(bot: TeleBot) -> None:
         db.update_quiz_data(user_id, quiz_data)
         db.set_quiz_step(user_id, "choosing_sort")
 
+        bot.answer_callback_query(call.id)
         bot.edit_message_text(
             t(lang, "ask_sort"),
             call.message.chat.id,
             call.message.message_id,
             reply_markup=sort_keyboard(lang),
         )
-        bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda c: c.data.startswith("sort:"))
     def on_sort_chosen(call):
@@ -190,11 +190,15 @@ def register(bot: TeleBot) -> None:
         quiz_data["sort"] = sort_value
         db.update_quiz_data(user_id, quiz_data)
 
+        # Always answer the callback right away — the recommendation fetch
+        # below can take several seconds (retries against Jikan/TMDB), and
+        # Telegram invalidates callback queries that aren't answered quickly.
+        bot.answer_callback_query(call.id)
+
         if quiz_data.get("type") == "anime":
             bot.edit_message_text(t(lang, "searching"), call.message.chat.id, call.message.message_id)
             _send_next_card(bot, call.message.chat.id, user_id, lang)
             db.set_quiz_step(user_id, "")
-            bot.answer_callback_query(call.id)
             return
 
         db.set_quiz_step(user_id, "entering_actor")
@@ -204,7 +208,6 @@ def register(bot: TeleBot) -> None:
             call.message.message_id,
             reply_markup=skip_keyboard(lang),
         )
-        bot.answer_callback_query(call.id)
 
     @bot.callback_query_handler(func=lambda c: c.data == "actor:skip")
     def on_actor_skip(call):
@@ -212,10 +215,10 @@ def register(bot: TeleBot) -> None:
         user = db.get_user(user_id)
         lang = user["language"]
 
+        bot.answer_callback_query(call.id)
         bot.edit_message_text(t(lang, "searching"), call.message.chat.id, call.message.message_id)
         _send_next_card(bot, call.message.chat.id, user_id, lang)
         db.set_quiz_step(user_id, "")
-        bot.answer_callback_query(call.id)
 
     @bot.message_handler(func=lambda m: db.get_user(m.from_user.id)["quiz_step"] == "entering_actor")
     def on_actor_name(message):
